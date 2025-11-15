@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electronic Medical Record System</title>
+    <title>DHIS2 EMR System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -21,7 +23,7 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -31,7 +33,6 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            padding: 20px;
         }
 
         .login-card {
@@ -84,6 +85,31 @@
             font-size: 14px;
         }
 
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .role-btn {
+            flex: 1;
+            padding: 15px;
+            background: #21262d;
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            color: #8b949e;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .role-btn.active {
+            border-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.1);
+            color: #58a6ff;
+        }
+
         .login-btn {
             width: 100%;
             padding: 20px 40px;
@@ -105,10 +131,6 @@
             background: linear-gradient(135deg, #22c55e 0%, #2ea043 100%);
             transform: translateY(-3px);
             box-shadow: 0 12px 30px rgba(46, 160, 67, 0.4);
-        }
-
-        .login-btn:active {
-            transform: translateY(-1px);
         }
 
         .error-message {
@@ -151,7 +173,6 @@
         .header {
             text-align: center;
             margin-bottom: 40px;
-            animation: fadeInDown 0.6s ease-out;
         }
 
         .header h1 {
@@ -166,19 +187,24 @@
             font-size: 18px;
         }
 
-        .logout-container {
-            text-align: right;
-            margin-bottom: 20px;
+        .status-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .status-info {
             display: flex;
-            align-items: center;
             gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .status-indicator {
@@ -211,13 +237,43 @@
             50% { opacity: 0.5; }
         }
 
-        .pending-badge {
-            background: #58a6ff;
-            color: #ffffff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+        .availability-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #30363d;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #2ea043;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
         }
 
         .logout-btn {
@@ -237,12 +293,12 @@
             color: #e6edf3;
         }
 
-        /* Tabs */
         .tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
             border-bottom: 2px solid #30363d;
+            overflow-x: auto;
         }
 
         .tab {
@@ -255,6 +311,7 @@
             position: relative;
             transition: color 0.3s;
             font-size: 14px;
+            white-space: nowrap;
         }
 
         .tab.active {
@@ -280,8 +337,7 @@
             animation: fadeIn 0.3s;
         }
 
-        /* Search Section */
-        .search-card {
+        .card {
             background: #161b22;
             border: 1px solid #30363d;
             border-radius: 12px;
@@ -291,7 +347,7 @@
             overflow: hidden;
         }
 
-        .search-card::before {
+        .card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -301,149 +357,20 @@
             background: linear-gradient(90deg, #2ea043, #58a6ff, #7c3aed);
         }
 
-        .search-header {
+        .card-header {
             margin-bottom: 30px;
         }
 
-        .search-title {
+        .card-title {
             font-size: 24px;
             font-weight: 700;
             color: #58a6ff;
             margin-bottom: 5px;
         }
 
-        .search-description {
+        .card-description {
             color: #8b949e;
             font-size: 14px;
-        }
-
-        .search-filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .search-results {
-            margin-top: 30px;
-            display: none;
-        }
-
-        .search-results.show {
-            display: block;
-        }
-
-        .patient-card {
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-        }
-
-        .patient-card:hover {
-            border-color: #58a6ff;
-            background: rgba(88, 166, 255, 0.05);
-        }
-
-        .patient-name {
-            font-size: 18px;
-            font-weight: 700;
-            color: #e6edf3;
-            margin-bottom: 8px;
-        }
-
-        .patient-details {
-            color: #8b949e;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .btn-view {
-            margin-top: 10px;
-            padding: 8px 16px;
-            background: #58a6ff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-view:hover {
-            background: #388bfd;
-        }
-
-        /* Form Section */
-        .form-card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 40px;
-            position: relative;
-            overflow: hidden;
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        .form-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #2ea043, #58a6ff, #7c3aed);
-        }
-
-        .form-section {
-            display: none;
-        }
-
-        .form-section.active {
-            display: block;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        .section-header {
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #30363d;
-        }
-
-        .section-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #58a6ff;
-            margin-bottom: 5px;
-        }
-
-        .section-description {
-            color: #8b949e;
-            font-size: 14px;
-        }
-
-        .progress-bar {
-            background: #21262d;
-            height: 8px;
-            border-radius: 4px;
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            background: linear-gradient(90deg, #2ea043, #58a6ff, #7c3aed);
-            height: 100%;
-            transition: width 0.3s ease;
-            border-radius: 4px;
-        }
-
-        .progress-text {
-            text-align: center;
-            color: #8b949e;
-            font-size: 12px;
-            margin-top: 8px;
-            margin-bottom: 20px;
         }
 
         .form-group {
@@ -486,15 +413,11 @@
             box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
         }
 
+        .form-input:disabled,
         .form-select:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             background: #161b22;
-        }
-
-        .form-textarea {
-            resize: vertical;
-            min-height: 100px;
         }
 
         .form-row {
@@ -509,14 +432,7 @@
             gap: 20px;
         }
 
-        .navigation-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        .btn-nav {
-            flex: 1;
+        .btn {
             padding: 14px 24px;
             border: none;
             border-radius: 6px;
@@ -528,32 +444,177 @@
             letter-spacing: 0.5px;
         }
 
-        .btn-back {
-            background: transparent;
-            color: #8b949e;
-            border: 1px solid #30363d;
-        }
-
-        .btn-back:hover {
-            background: #30363d;
-            border-color: #58a6ff;
-            color: #e6edf3;
-        }
-
-        .btn-next {
+        .btn-primary {
             background: #58a6ff;
             color: #ffffff;
+            width: 100%;
         }
 
-        .btn-next:hover {
+        .btn-primary:hover {
             background: #388bfd;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(88, 166, 255, 0.3);
         }
 
-        .btn-next:disabled {
+        .btn-primary:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: #2ea043;
+            color: #ffffff;
+        }
+
+        .btn-success:hover {
+            background: #22c55e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46, 160, 67, 0.3);
+        }
+
+        .patient-card {
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .patient-card:hover {
+            border-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .patient-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e6edf3;
+            margin-bottom: 8px;
+        }
+
+        .patient-details {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .patient-id-badge {
+            background: #58a6ff;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-ready {
+            background: #2ea043;
+            color: white;
+        }
+
+        .duplicate-warning {
+            background: rgba(248, 81, 73, 0.1);
+            border: 2px solid #f85149;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .duplicate-warning h3 {
+            color: #f85149;
+            margin-bottom: 10px;
+        }
+
+        .org-tree {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .org-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            transition: background 0.2s;
+        }
+
+        .org-item:hover {
+            background: #30363d;
+        }
+
+        .org-item.selected {
+            background: #58a6ff;
+            color: white;
+        }
+
+        .org-level-1 { padding-left: 12px; }
+        .org-level-2 { padding-left: 24px; }
+        .org-level-3 { padding-left: 36px; }
+        .org-level-4 { padding-left: 48px; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+
+        .modal-close:hover {
+            color: #e6edf3;
         }
 
         .notification {
@@ -614,107 +675,14 @@
             100% { transform: rotate(360deg); }
         }
 
-        .no-records {
-            text-align: center;
-            padding: 40px;
-            color: #8b949e;
-        }
-
-        /* Print Styles */
-        @media print {
-            body {
-                background: white;
-            }
-            
-            body > *:not(.print-section) {
-                display: none !important;
-            }
-            
-            .print-section {
-                display: block !important;
-                position: static !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            
-            .print-section * {
-                visibility: visible !important;
-            }
-        }
-
-        .print-section {
-            display: none;
-        }
-
-        .print-header {
-            text-align: center;
-            border-bottom: 3px solid #58a6ff;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-
-        .print-header h1 {
-            color: #58a6ff;
-            font-size: 32px;
-            margin-bottom: 5px;
-        }
-
-        .print-patient-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .info-item {
-            padding: 10px;
-            background: #f9f9f9;
-            border-radius: 8px;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #666;
-            font-size: 12px;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
-            color: #333;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        th {
-            background: #58a6ff;
-            color: white;
-            font-weight: 600;
-        }
-
         @media (max-width: 768px) {
-            .form-row, .form-row-3, .search-filters {
+            .form-row, .form-row-3 {
                 grid-template-columns: 1fr;
             }
 
-            .logout-container {
+            .status-bar {
                 flex-direction: column;
-            }
-
-            .tabs {
-                overflow-x: auto;
+                align-items: flex-start;
             }
         }
     </style>
@@ -724,11 +692,22 @@
     <div class="login-screen" id="loginScreen">
         <div class="login-card">
             <div class="login-header">
-                <h1>Electronic Medical Records</h1>
-                <p>Please login to access the system</p>
+                <h1>DHIS2 EMR System</h1>
+                <p>Select your role and login</p>
             </div>
 
-            <div class="error-message" id="loginError">Invalid username or password</div>
+            <div class="role-selector">
+                <div class="role-btn active" onclick="selectRole('admin')" id="roleAdmin">
+                    <div style="font-size: 24px; margin-bottom: 5px;">👨‍💼</div>
+                    <div>Admin/Receptionist</div>
+                </div>
+                <div class="role-btn" onclick="selectRole('doctor')" id="roleDoctor">
+                    <div style="font-size: 24px; margin-bottom: 5px;">👨‍⚕️</div>
+                    <div>Doctor</div>
+                </div>
+            </div>
+
+            <div class="error-message" id="loginError">Invalid credentials</div>
 
             <form id="loginForm">
                 <div class="form-group">
@@ -749,15 +728,20 @@
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <div class="container">
-            <div class="logout-container">
+            <div class="status-bar">
                 <div class="status-info">
                     <div class="status-indicator">
-                        <span class="status-dot" id="statusDot"></span>
-                        <span id="statusText">Checking...</span>
+                        <span id="currentUserDisplay"></span>
+                    </div>
+                    <div class="availability-toggle" id="availabilityToggle" style="display: none;">
+                        <span style="color: #8b949e; font-size: 14px;">Available:</span>
+                        <div class="toggle-switch" id="availabilitySwitch">
+                            <div class="toggle-slider"></div>
+                        </div>
                     </div>
                     <div class="status-indicator">
-                        <span>Pending submissions:</span>
-                        <span class="pending-badge" id="pendingCount">0</span>
+                        <span class="status-dot" id="dhisStatusDot"></span>
+                        <span id="dhisStatusText">Connecting to DHIS2...</span>
                     </div>
                 </div>
                 <button class="logout-btn" id="logoutBtn">Logout</button>
@@ -765,306 +749,238 @@
 
             <div class="header">
                 <h1>Electronic Medical Record System</h1>
-                <p>Works offline - Data syncs automatically when online</p>
+                <p>DHIS2 Integrated</p>
             </div>
 
             <div class="tabs">
                 <button class="tab active" data-tab="search">Search Patient</button>
-                <button class="tab" data-tab="register">New Patient</button>
-                <button class="tab" data-tab="status" id="statusTab" style="display: none;">Patient Status</button>
-                <button class="tab" data-tab="doctor" id="doctorTab" style="display: none;">Doctor Dashboard</button>
+                <button class="tab" data-tab="register" id="registerTab">New Patient</button>
+                <button class="tab" data-tab="consultations" id="consultationsTab">All Patients</button>
+                <button class="tab" data-tab="doctor" id="doctorTab" style="display: none;">My Patients</button>
             </div>
 
             <!-- Search Tab -->
             <div class="tab-content active" data-content="search">
-                <div class="search-card">
-                    <div class="search-header">
-                        <h2 class="search-title">Search Patient Records</h2>
-                        <p class="search-description">Filter by any field to find patient records</p>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Search Patient by ID</h2>
+                        <p class="card-description">Enter the patient ID to find records</p>
                     </div>
 
-                    <div class="search-filters">
-                        <div class="form-group">
-                            <label class="form-label">First Name</label>
-                            <input type="text" class="form-input" id="searchFirstName" placeholder="Search...">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Last Name</label>
-                            <input type="text" class="form-input" id="searchLastName" placeholder="Search...">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Date of Birth</label>
-                            <input type="date" class="form-input" id="searchDOB">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Phone Number</label>
-                            <input type="text" class="form-input" id="searchPhone" placeholder="Search...">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Patient ID</label>
-                            <input type="text" class="form-input" id="searchPatientID" placeholder="PT-2025-0001">
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">Patient ID</label>
+                        <input type="text" class="form-input" id="searchPatientID" placeholder="e.g., mohamed_02121995_099177283">
                     </div>
 
-                    <button class="btn-next" id="searchBtn" style="width: 100%;">Search Records</button>
+                    <button class="btn btn-primary" id="searchBtn">Search</button>
 
-                    <div class="search-results" id="searchResults">
-                        <div id="resultsContainer"></div>
-                    </div>
+                    <div id="searchResults" style="margin-top: 30px;"></div>
                 </div>
             </div>
 
             <!-- Register Tab -->
             <div class="tab-content" data-content="register">
-                <div class="form-card">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Register New Patient</h2>
+                        <p class="card-description">Enter patient ID or complete information</p>
                     </div>
-                    <div class="progress-text" id="progressText">Section 1 of 3</div>
+
+                    <div id="duplicateWarning"></div>
 
                     <form id="patientForm">
-                        <!-- Section 1: Demographics -->
-                        <div class="form-section active" data-section="1">
-                            <div class="section-header">
-                                <h2 class="section-title">Patient Demographics</h2>
-                                <p class="section-description">Basic patient identification information</p>
-                            </div>
-
-                            <div class="form-row-3">
-                                <div class="form-group">
-                                    <label class="form-label">First Name <span class="required">*</span></label>
-                                    <input type="text" class="form-input" name="firstName" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Middle Name</label>
-                                    <input type="text" class="form-input" name="middleName">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Last Name <span class="required">*</span></label>
-                                    <input type="text" class="form-input" name="lastName" required>
-                                </div>
-                            </div>
-
+                        <!-- Patient ID Lookup Section -->
+                        <div style="background: #21262d; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                            <h3 style="color: #58a6ff; margin-bottom: 15px;">Existing Patient?</h3>
+                            <p style="color: #8b949e; font-size: 14px; margin-bottom: 15px;">Enter Patient ID to auto-populate information</p>
+                            
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label class="form-label">Date of Birth <span class="required">*</span></label>
-                                    <input type="date" class="form-input" name="dob" required>
+                                    <label class="form-label">Patient ID</label>
+                                    <input type="text" class="form-input" id="patientIdLookup" placeholder="e.g., mohamed_02121995_099177283">
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Gender <span class="required">*</span></label>
-                                    <select class="form-select" name="gender" required>
-                                        <option value="">Select gender...</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
+                                <div style="display: flex; align-items: flex-end;">
+                                    <button type="button" class="btn btn-primary" id="lookupBtn" style="width: 100%;">Load Patient</button>
                                 </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Phone Number <span class="required">*</span></label>
-                                    <input type="tel" class="form-input" name="phone" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Email</label>
-                                    <input type="email" class="form-input" name="email">
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Address <span class="required">*</span></label>
-                                <input type="text" class="form-input" name="address" required>
-                            </div>
-
-                            <div class="navigation-buttons">
-                                <button type="button" class="btn-nav btn-next" onclick="nextSection()">Next Section</button>
                             </div>
                         </div>
 
-                        <!-- Section 2: Location -->
-                        <div class="form-section" data-section="2">
-                            <div class="section-header">
-                                <h2 class="section-title">Location Information</h2>
-                                <p class="section-description">Health facility and regional information</p>
-                            </div>
+                        <h3 style="color: #58a6ff; margin-bottom: 20px;">Demographics</h3>
 
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Region <span class="required">*</span></label>
-                                    <select class="form-select" name="region" id="regionSelect" required>
-                                        <option value="">Select region...</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">District <span class="required">*</span></label>
-                                    <select class="form-select" name="district" id="districtSelect" required disabled>
-                                        <option value="">Select region first...</option>
-                                    </select>
-                                </div>
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">First Name <span class="required">*</span></label>
+                                <input type="text" class="form-input" name="firstName" id="firstName" required>
                             </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Chiefdom <span class="required">*</span></label>
-                                    <select class="form-select" name="chiefdom" id="chiefdomSelect" required disabled>
-                                        <option value="">Select district first...</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Health Facility <span class="required">*</span></label>
-                                    <select class="form-select" name="healthFacility" id="healthFacilitySelect" required disabled>
-                                        <option value="">Select chiefdom first...</option>
-                                    </select>
-                                </div>
+                            <div class="form-group">
+                                <label class="form-label">Middle Name</label>
+                                <input type="text" class="form-input" name="middleName" id="middleName">
                             </div>
-
-                            <div class="navigation-buttons">
-                                <button type="button" class="btn-nav btn-back" onclick="previousSection()">Back</button>
-                                <button type="button" class="btn-nav btn-next" onclick="nextSection()">Next Section</button>
+                            <div class="form-group">
+                                <label class="form-label">Last Name <span class="required">*</span></label>
+                                <input type="text" class="form-input" name="lastName" id="lastName" required>
                             </div>
                         </div>
 
-                        <!-- Section 3: Emergency Contact & Clinical -->
-                        <div class="form-section" data-section="3">
-                            <div class="section-header">
-                                <h2 class="section-title">Emergency Contact & Clinical Information</h2>
-                                <p class="section-description">Emergency contact and initial clinical data</p>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Emergency Contact Name</label>
-                                    <input type="text" class="form-input" name="emergencyContact">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Emergency Contact Phone</label>
-                                    <input type="tel" class="form-input" name="emergencyPhone">
-                                </div>
-                            </div>
-
-                            <div class="section-header" style="margin-top: 30px;">
-                                <h2 class="section-title">Initial Visit - Vital Signs</h2>
-                                <p class="section-description">Record initial vital signs</p>
-                            </div>
-
-                            <div class="form-row-3">
-                                <div class="form-group">
-                                    <label class="form-label">Temperature (°C)</label>
-                                    <input type="number" step="0.1" class="form-input" name="temperature">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Blood Pressure</label>
-                                    <input type="text" class="form-input" name="bloodPressure" placeholder="120/80">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Pulse (bpm)</label>
-                                    <input type="number" class="form-input" name="pulse">
-                                </div>
-                            </div>
-
-                            <div class="form-row-3">
-                                <div class="form-group">
-                                    <label class="form-label">Weight (kg)</label>
-                                    <input type="number" step="0.1" class="form-input" name="weight">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Height (cm)</label>
-                                    <input type="number" class="form-input" name="height">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Respiratory Rate</label>
-                                    <input type="number" class="form-input" name="respiratoryRate">
-                                </div>
-                            </div>
-
+                        <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">Specialty / Department <span class="required">*</span></label>
-                                <select class="form-select" name="specialty" id="specialtySelect" required>
-                                    <option value="">Select specialty...</option>
-                                    <option value="General Medicine">General Medicine</option>
-                                    <option value="Pediatrics">Pediatrics</option>
-                                    <option value="Surgery">Surgery</option>
-                                    <option value="Obstetrics & Gynecology">Obstetrics & Gynecology</option>
-                                    <option value="Internal Medicine">Internal Medicine</option>
+                                <label class="form-label">Date of Birth <span class="required">*</span></label>
+                                <input type="date" class="form-input" name="dob" id="dob" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gender <span class="required">*</span></label>
+                                <select class="form-select" name="gender" id="gender" required>
+                                    <option value="">Select gender...</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <div class="form-group" id="assignedDoctorDisplay" style="display: none;">
-                                <label class="form-label">Assigned Doctor</label>
-                                <div style="padding: 12px 16px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #58a6ff; font-weight: 600;">
-                                    <span id="assignedDoctorName"></span>
-                                </div>
-                            </div>
-
+                        <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">Chief Complaint</label>
-                                <input type="text" class="form-input" name="chiefComplaint">
+                                <label class="form-label">Phone Number <span class="required">*</span></label>
+                                <input type="tel" class="form-input" name="phone" id="phone" required>
                             </div>
-
                             <div class="form-group">
-                                <label class="form-label">Diagnosis</label>
-                                <input type="text" class="form-input" name="diagnosis">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Treatment/Prescription</label>
-                                <textarea class="form-textarea" name="treatment" rows="3"></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Clinical Notes</label>
-                                <textarea class="form-textarea" name="notes" rows="3"></textarea>
-                            </div>
-
-                            <div class="navigation-buttons">
-                                <button type="button" class="btn-nav btn-back" onclick="previousSection()">Back</button>
-                                <button type="submit" class="btn-nav btn-next" id="submitBtn">Register Patient</button>
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-input" name="email" id="email">
                             </div>
                         </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Address <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="address" id="address" required>
+                        </div>
+
+                        <h3 style="color: #58a6ff; margin: 30px 0 20px;">Organization Unit <span class="required">*</span></h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Select Health Facility</label>
+                            <input type="text" class="form-input" id="orgUnitSearch" placeholder="Type to search...">
+                            <div class="org-tree" id="orgUnitTree"></div>
+                            <input type="hidden" name="orgUnit" id="selectedOrgUnit" required>
+                        </div>
+
+                        <h3 style="color: #58a6ff; margin: 30px 0 20px;">Emergency Contact</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Contact Name</label>
+                                <input type="text" class="form-input" name="emergencyContact" id="emergencyContact">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Contact Phone</label>
+                                <input type="tel" class="form-input" name="emergencyPhone" id="emergencyPhone">
+                            </div>
+                        </div>
+
+                        <h3 style="color: #58a6ff; margin: 30px 0 20px;">Vital Signs</h3>
+
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">Temperature (°C)</label>
+                                <input type="number" step="0.1" class="form-input" name="temperature">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Blood Pressure</label>
+                                <input type="text" class="form-input" name="bloodPressure" placeholder="120/80">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Pulse (bpm)</label>
+                                <input type="number" class="form-input" name="pulse">
+                            </div>
+                        </div>
+
+                        <div class="form-row-3">
+                            <div class="form-group">
+                                <label class="form-label">Weight (kg)</label>
+                                <input type="number" step="0.1" class="form-input" name="weight">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Height (cm)</label>
+                                <input type="number" class="form-input" name="height">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Respiratory Rate</label>
+                                <input type="number" class="form-input" name="respiratoryRate">
+                            </div>
+                        </div>
+
+                        <h3 style="color: #58a6ff; margin: 30px 0 20px;">Clinical Information</h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Specialty / Department <span class="required">*</span></label>
+                            <select class="form-select" name="specialty" id="specialty" required>
+                                <option value="">Select specialty...</option>
+                                <option value="General Medicine">General Medicine</option>
+                                <option value="Pediatrics">Pediatrics</option>
+                                <option value="Surgery">Surgery</option>
+                                <option value="Obstetrics & Gynecology">Obstetrics & Gynecology</option>
+                                <option value="Internal Medicine">Internal Medicine</option>
+                            </select>
+                        </div>
+
+                        <div id="doctorAssignment"></div>
+
+                        <div class="form-group">
+                            <label class="form-label">Chief Complaint</label>
+                            <input type="text" class="form-input" name="chiefComplaint">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Diagnosis</label>
+                            <input type="text" class="form-input" name="diagnosis">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Treatment/Prescription</label>
+                            <textarea class="form-textarea" name="treatment" rows="3"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Clinical Notes</label>
+                            <textarea class="form-textarea" name="notes" rows="3"></textarea>
+                        </div>
+
+                        <input type="hidden" name="existingPatientId" id="existingPatientId">
+
+                        <button type="submit" class="btn btn-success" style="width: 100%;">Register Patient</button>
                     </form>
                 </div>
             </div>
 
-            <!-- Patient Status Tab -->
-            <div class="tab-content" data-content="status">
-                <div class="search-card">
-                    <div class="search-header">
-                        <h2 class="search-title">Consultation Status</h2>
-                        <p class="search-description">View all consultation requests (sorted from latest to oldest)</p>
+            <!-- All Patients Tab -->
+            <div class="tab-content" data-content="consultations">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">All Patients</h2>
+                        <p class="card-description">System-wide patient records</p>
                     </div>
-
-                    <div class="search-results show" id="statusResults">
-                        <div id="statusContainer">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <p>Loading consultation statuses...</p>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="consultationsList"></div>
                 </div>
             </div>
 
-            <!-- Doctor Dashboard Tab -->
+            <!-- Doctor Dashboard -->
             <div class="tab-content" data-content="doctor">
-                <div class="search-card">
-                    <div class="search-header">
-                        <h2 class="search-title">Doctor Dashboard</h2>
-                        <p class="search-description">Review and accept consultation requests</p>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">My Patients</h2>
+                        <p class="card-description">Patients assigned to you</p>
                     </div>
-
-                    <div id="doctorCasesContainer">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <p>Loading cases...</p>
-                        </div>
-                    </div>
+                    <div id="doctorDashboard"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Print Section -->
-    <div class="print-section" id="printSection"></div>
+    <!-- Status Modal -->
+    <div class="modal" id="statusModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div id="statusModalContent"></div>
+        </div>
+    </div>
 
     <!-- Notification -->
     <div class="notification" id="notification">
@@ -1072,312 +988,152 @@
     </div>
 
     <script>
-        // Configuration
-        const CONFIG = {
-            SCRIPT_URL: 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec',
-            LOGIN_USERNAME: 'admin',
-            LOGIN_PASSWORD: 'admin',
-            DOCTOR_CREDENTIALS: {
-                'dr.smith': { password: 'doctor123', name: 'Dr. John Smith', specialty: 'General Medicine' },
-                'dr.johnson': { password: 'doctor123', name: 'Dr. Sarah Johnson', specialty: 'Pediatrics' },
-                'dr.williams': { password: 'doctor123', name: 'Dr. Michael Williams', specialty: 'Surgery' },
-                'dr.brown': { password: 'doctor123', name: 'Dr. Emily Brown', specialty: 'Obstetrics & Gynecology' },
-                'dr.davis': { password: 'doctor123', name: 'Dr. David Davis', specialty: 'Internal Medicine' }
-            }
-        };
-
-        // Doctors and their specialties
+        // Doctor credentials
         const DOCTORS = {
-            'General Medicine': { name: 'Dr. John Smith', username: 'dr.smith' },
-            'Pediatrics': { name: 'Dr. Sarah Johnson', username: 'dr.johnson' },
-            'Surgery': { name: 'Dr. Michael Williams', username: 'dr.williams' },
-            'Obstetrics & Gynecology': { name: 'Dr. Emily Brown', username: 'dr.brown' },
-            'Internal Medicine': { name: 'Dr. David Davis', username: 'dr.davis' }
-        };
-
-        // Cascading data
-        const CASCADING_DATA = `Eastern Region||Kailahun District
-Eastern Region||Kenema District
-Eastern Region||Kono District
-Northern Region||Bombali District
-Northern Region||Falaba District
-Northern Region||Koinadugu District
-Northern Region||Tonkolili District
-North West Region||Kambia District
-North West Region||Karene District
-North West Region||Port Loko District
-Southern Region||Bo District
-Southern Region||Bonthe District
-Southern Region||Moyamba District
-Southern Region||Pujehun District
-Western Area||Western Area Urban District
-Western Area||Western Area Rural District
-Bo District||Bo City
-Bo District||Badjia Chiefdom
-Bombali District||Makeni City
-Bo City||Bo Government Hospital
-Bo City||Kakua Static CHC
-Makeni City||Makeni Government Hospital`;
-
-        // State
-        const state = {
-            pendingSubmissions: [],
-            isOnline: navigator.onLine,
-            isLoggedIn: false,
-            userType: null, // 'admin', 'doctor', or 'patient'
-            currentUser: null,
-            currentSection: 1,
-            totalSections: 3,
-            pendingCases: [] // For doctor dashboard
-        };
-
-        // Cascading Manager
-        const CascadingManager = {
-            regions: {},
-            districts: {},
-            chiefdoms: {},
-
-            init() {
-                this.parseCascadingData();
-                this.populateRegions();
-                this.setupListeners();
+            'dr.smith': {
+                password: 'doctor123',
+                name: 'Dr. John Smith',
+                specialty: 'General Medicine',
+                available: true
             },
-
-            parseCascadingData() {
-                const lines = CASCADING_DATA.trim().split('\n');
-                lines.forEach(line => {
-                    const parts = line.split('||');
-                    if (parts.length === 2) {
-                        const [parent, child] = parts.map(s => s.trim());
-                        
-                        if (parent.includes('Region') || parent === 'Western Area') {
-                            if (!this.regions[parent]) this.regions[parent] = [];
-                            if (!this.regions[parent].includes(child)) {
-                                this.regions[parent].push(child);
-                            }
-                        }
-                        else if (child.includes('Chiefdom') || child.includes('City') || child.includes('Town') || child.includes('Zone')) {
-                            if (!this.districts[parent]) this.districts[parent] = [];
-                            if (!this.districts[parent].includes(child)) {
-                                this.districts[parent].push(child);
-                            }
-                        }
-                        else {
-                            if (!this.chiefdoms[parent]) this.chiefdoms[parent] = [];
-                            if (!this.chiefdoms[parent].includes(child)) {
-                                this.chiefdoms[parent].push(child);
-                            }
-                        }
-                    }
-                });
+            'dr.johnson': {
+                password: 'doctor123',
+                name: 'Dr. Sarah Johnson',
+                specialty: 'Pediatrics',
+                available: true
             },
-
-            populateRegions() {
-                const regionSelect = document.getElementById('regionSelect');
-                Object.keys(this.regions).forEach(region => {
-                    const option = document.createElement('option');
-                    option.value = region;
-                    option.textContent = region;
-                    regionSelect.appendChild(option);
-                });
+            'dr.williams': {
+                password: 'doctor123',
+                name: 'Dr. Michael Williams',
+                specialty: 'Surgery',
+                available: false
             },
-
-            setupListeners() {
-                document.getElementById('regionSelect').addEventListener('change', (e) => this.handleRegionChange(e));
-                document.getElementById('districtSelect').addEventListener('change', (e) => this.handleDistrictChange(e));
-                document.getElementById('chiefdomSelect').addEventListener('change', (e) => this.handleChiefdomChange(e));
+            'dr.brown': {
+                password: 'doctor123',
+                name: 'Dr. Emily Brown',
+                specialty: 'Obstetrics & Gynecology',
+                available: true
             },
-
-            handleRegionChange(e) {
-                const region = e.target.value;
-                const districtSelect = document.getElementById('districtSelect');
-                const chiefdomSelect = document.getElementById('chiefdomSelect');
-                const facilitySelect = document.getElementById('healthFacilitySelect');
-
-                districtSelect.innerHTML = '<option value="">Select district...</option>';
-                chiefdomSelect.innerHTML = '<option value="">Select district first...</option>';
-                facilitySelect.innerHTML = '<option value="">Select chiefdom first...</option>';
-                chiefdomSelect.disabled = true;
-                facilitySelect.disabled = true;
-
-                if (region && this.regions[region]) {
-                    districtSelect.disabled = false;
-                    this.regions[region].forEach(district => {
-                        const option = document.createElement('option');
-                        option.value = district;
-                        option.textContent = district;
-                        districtSelect.appendChild(option);
-                    });
-                } else {
-                    districtSelect.disabled = true;
-                }
-            },
-
-            handleDistrictChange(e) {
-                const district = e.target.value;
-                const chiefdomSelect = document.getElementById('chiefdomSelect');
-                const facilitySelect = document.getElementById('healthFacilitySelect');
-
-                chiefdomSelect.innerHTML = '<option value="">Select chiefdom...</option>';
-                facilitySelect.innerHTML = '<option value="">Select chiefdom first...</option>';
-                facilitySelect.disabled = true;
-
-                if (district && this.districts[district]) {
-                    chiefdomSelect.disabled = false;
-                    this.districts[district].forEach(chiefdom => {
-                        const option = document.createElement('option');
-                        option.value = chiefdom;
-                        option.textContent = chiefdom;
-                        chiefdomSelect.appendChild(option);
-                    });
-                } else {
-                    chiefdomSelect.disabled = true;
-                }
-            },
-
-            handleChiefdomChange(e) {
-                const chiefdom = e.target.value;
-                const facilitySelect = document.getElementById('healthFacilitySelect');
-
-                facilitySelect.innerHTML = '<option value="">Select facility...</option>';
-
-                if (chiefdom && this.chiefdoms[chiefdom]) {
-                    facilitySelect.disabled = false;
-                    this.chiefdoms[chiefdom].forEach(facility => {
-                        const option = document.createElement('option');
-                        option.value = facility;
-                        option.textContent = facility;
-                        facilitySelect.appendChild(option);
-                    });
-                } else {
-                    facilitySelect.disabled = true;
-                }
+            'dr.davis': {
+                password: 'doctor123',
+                name: 'Dr. David Davis',
+                specialty: 'Internal Medicine',
+                available: true
             }
         };
 
-        // Main App
-        function init() {
-            loadPendingSubmissions();
+        // DHIS2 Configuration
+        const DHIS2 = {
+            baseUrl: '',
+            currentUser: null,
+            orgUnits: [],
+            programId: '',
+            trackedEntityType: '',
+            attributes: {},
+            dataElements: {}
+        };
+
+        // State Management
+        const state = {
+            patients: new Map(),
+            consultations: new Map(),
+            selectedOrgUnit: null,
+            filteredOrgUnits: [],
+            currentUserType: null,
+            currentUserName: null,
+            selectedRole: 'admin'
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
             checkLoginState();
             setupEventListeners();
-            updateOnlineStatus();
-            CascadingManager.init();
-        }
+        });
 
-        function loadPendingSubmissions() {
-            const saved = localStorage.getItem('pendingSubmissions');
-            if (saved) {
-                try {
-                    state.pendingSubmissions = JSON.parse(saved);
-                } catch (e) {
-                    state.pendingSubmissions = [];
-                }
-            }
-            updatePendingCount();
-        }
-
-        function savePendingSubmissions() {
-            localStorage.setItem('pendingSubmissions', JSON.stringify(state.pendingSubmissions));
-        }
-
-        function updatePendingCount() {
-            document.getElementById('pendingCount').textContent = state.pendingSubmissions.length;
+        function selectRole(role) {
+            state.selectedRole = role;
+            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('role' + role.charAt(0).toUpperCase() + role.slice(1)).classList.add('active');
         }
 
         function setupEventListeners() {
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
             document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-            document.getElementById('patientForm').addEventListener('submit', handleSubmit);
-            document.getElementById('searchBtn').addEventListener('click', handleSearch);
+            document.getElementById('patientForm').addEventListener('submit', registerPatient);
+            document.getElementById('searchBtn').addEventListener('click', searchPatient);
+            document.getElementById('lookupBtn').addEventListener('click', loadPatientById);
+            document.getElementById('availabilitySwitch')?.addEventListener('click', toggleAvailability);
+            document.getElementById('specialty').addEventListener('change', handleSpecialtyChange);
 
+            // Real-time search
+            document.getElementById('searchPatientID').addEventListener('input', searchPatient);
+            document.getElementById('orgUnitSearch').addEventListener('input', (e) => {
+                searchOrgUnits(e.target.value);
+            });
+
+            // Check for duplicate on blur
+            ['firstName', 'lastName', 'dob', 'phone'].forEach(id => {
+                document.getElementById(id).addEventListener('blur', checkDuplicate);
+            });
+
+            // Tab switching
             document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    document.querySelector(`[data-content="${tab.dataset.tab}"]`).classList.add('active');
+
+                    if (tab.dataset.tab === 'consultations') {
+                        loadConsultations();
+                    } else if (tab.dataset.tab === 'doctor') {
+                        loadDoctorDashboard();
+                    }
+                });
             });
-
-            window.addEventListener('online', handleOnlineEvent);
-            window.addEventListener('offline', handleOfflineEvent);
-
-            // Real-time search on all fields
-            ['searchFirstName', 'searchLastName', 'searchDOB', 'searchPhone', 'searchPatientID'].forEach(id => {
-                document.getElementById(id).addEventListener('input', handleSearch);
-            });
-
-            // Specialty selection shows assigned doctor
-            document.getElementById('specialtySelect').addEventListener('change', function(e) {
-                const specialty = e.target.value;
-                if (specialty && DOCTORS[specialty]) {
-                    document.getElementById('assignedDoctorDisplay').style.display = 'block';
-                    document.getElementById('assignedDoctorName').textContent = DOCTORS[specialty].name;
-                } else {
-                    document.getElementById('assignedDoctorDisplay').style.display = 'none';
-                }
-            });
-        }
-
-        function handleOnlineEvent() {
-            state.isOnline = true;
-            updateOnlineStatus();
-            showNotification('Back online - Syncing data...', 'info');
-            syncPendingSubmissions();
-        }
-
-        function handleOfflineEvent() {
-            state.isOnline = false;
-            updateOnlineStatus();
-            showNotification('You are offline - Data will be saved locally', 'info');
-        }
-
-        function updateOnlineStatus() {
-            const dot = document.getElementById('statusDot');
-            const text = document.getElementById('statusText');
-            
-            if (state.isOnline) {
-                dot.className = 'status-dot online';
-                text.textContent = 'Online';
-            } else {
-                dot.className = 'status-dot offline';
-                text.textContent = 'Offline';
-            }
         }
 
         function checkLoginState() {
-            state.isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-            state.userType = sessionStorage.getItem('userType');
-            state.currentUser = sessionStorage.getItem('currentUser');
-            
-            if (state.isLoggedIn) {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            const userType = sessionStorage.getItem('userType');
+            const userName = sessionStorage.getItem('userName');
+
+            if (isLoggedIn) {
+                state.currentUserType = userType;
+                state.currentUserName = userName;
                 showMainContent();
             }
         }
 
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const role = state.selectedRole;
 
-            // Check admin login
-            if (username === CONFIG.LOGIN_USERNAME && password === CONFIG.LOGIN_PASSWORD) {
-                sessionStorage.setItem('isLoggedIn', 'true');
-                sessionStorage.setItem('userType', 'admin');
-                state.isLoggedIn = true;
-                state.userType = 'admin';
-                showMainContent();
-                return;
+            if (role === 'admin') {
+                if (username === 'admin' && password === 'admin') {
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    sessionStorage.setItem('userType', 'admin');
+                    sessionStorage.setItem('userName', 'Administrator');
+                    state.currentUserType = 'admin';
+                    state.currentUserName = 'Administrator';
+                    await showMainContent();
+                    return;
+                }
+            } else if (role === 'doctor') {
+                if (DOCTORS[username] && DOCTORS[username].password === password) {
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    sessionStorage.setItem('userType', 'doctor');
+                    sessionStorage.setItem('userName', username);
+                    state.currentUserType = 'doctor';
+                    state.currentUserName = username;
+                    await showMainContent();
+                    return;
+                }
             }
 
-            // Check doctor login
-            if (CONFIG.DOCTOR_CREDENTIALS[username] && CONFIG.DOCTOR_CREDENTIALS[username].password === password) {
-                sessionStorage.setItem('isLoggedIn', 'true');
-                sessionStorage.setItem('userType', 'doctor');
-                sessionStorage.setItem('currentUser', username);
-                state.isLoggedIn = true;
-                state.userType = 'doctor';
-                state.currentUser = username;
-                showMainContent();
-                return;
-            }
-
-            // Invalid credentials
             document.getElementById('loginError').classList.add('show');
             setTimeout(() => {
                 document.getElementById('loginError').classList.remove('show');
@@ -1385,637 +1141,673 @@ Makeni City||Makeni Government Hospital`;
         }
 
         function handleLogout() {
-            sessionStorage.removeItem('isLoggedIn');
-            state.isLoggedIn = false;
-            document.getElementById('mainContent').classList.remove('show');
-            document.getElementById('loginScreen').style.display = 'flex';
+            sessionStorage.clear();
+            location.reload();
         }
 
-        function showMainContent() {
+        async function showMainContent() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContent').classList.add('show');
-            
-            // Show/hide tabs based on user type
-            if (state.userType === 'doctor') {
+
+            if (state.currentUserType === 'doctor') {
+                const doctorInfo = DOCTORS[state.currentUserName];
+                document.getElementById('currentUserDisplay').textContent = doctorInfo.name;
                 document.getElementById('doctorTab').style.display = 'block';
-                document.getElementById('statusTab').style.display = 'none';
-                // Switch to doctor dashboard
+                document.getElementById('availabilityToggle').style.display = 'flex';
+                
+                const availSwitch = document.getElementById('availabilitySwitch');
+                if (doctorInfo.available) {
+                    availSwitch.classList.add('active');
+                }
+
+                // Hide admin tabs
+                document.getElementById('registerTab').style.display = 'none';
+                document.getElementById('consultationsTab').style.display = 'none';
+
+                // Switch to doctor tab
                 switchTab('doctor');
-                loadDoctorCases();
-            } else if (state.userType === 'admin') {
+            } else {
+                document.getElementById('currentUserDisplay').textContent = 'Administrator';
                 document.getElementById('doctorTab').style.display = 'none';
-                document.getElementById('statusTab').style.display = 'block';
-                // Load all consultation statuses when viewing status tab
-                loadAllConsultationStatuses();
+                document.getElementById('availabilityToggle').style.display = 'none';
             }
-            
-            if (state.isOnline && state.pendingSubmissions.length > 0) {
-                syncPendingSubmissions();
-            }
+
+            await initializeDHIS2();
+            loadFromLocalStorage();
         }
 
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-            document.querySelector(`[data-content="${tabName}"]`).classList.add('active');
+            
+            document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
+            document.querySelector(`[data-content="${tabName}"]`)?.classList.add('active');
 
-            // Load consultation statuses when switching to status tab
-            if (tabName === 'status' && state.userType === 'admin') {
-                loadAllConsultationStatuses();
+            if (tabName === 'doctor') {
+                loadDoctorDashboard();
+            } else if (tabName === 'consultations') {
+                loadConsultations();
             }
         }
 
-        function nextSection() {
-            const currentSectionEl = document.querySelector(`.form-section[data-section="${state.currentSection}"]`);
-            const inputs = currentSectionEl.querySelectorAll('input[required], select[required]');
-            let isValid = true;
+        function toggleAvailability() {
+            const switchEl = document.getElementById('availabilitySwitch');
+            switchEl.classList.toggle('active');
+            DOCTORS[state.currentUserName].available = switchEl.classList.contains('active');
             
-            inputs.forEach(input => {
-                if (!input.value) {
-                    isValid = false;
-                    input.style.borderColor = '#f85149';
-                    setTimeout(() => input.style.borderColor = '', 3000);
+            saveDoctorAvailability();
+            
+            const status = switchEl.classList.contains('active') ? 'Available' : 'Unavailable';
+            showNotification(`Status updated to: ${status}`, 'success');
+        }
+
+        function saveDoctorAvailability() {
+            localStorage.setItem('doctors', JSON.stringify(DOCTORS));
+        }
+
+        function loadDoctorAvailability() {
+            const saved = localStorage.getItem('doctors');
+            if (saved) {
+                try {
+                    const savedDoctors = JSON.parse(saved);
+                    Object.assign(DOCTORS, savedDoctors);
+                } catch (error) {
+                    console.error('Error loading doctor availability:', error);
                 }
-            });
-            
-            if (!isValid) {
-                showNotification('Please fill in all required fields', 'error');
-                return;
-            }
-            
-            if (state.currentSection < state.totalSections) {
-                currentSectionEl.classList.remove('active');
-                state.currentSection++;
-                document.querySelector(`.form-section[data-section="${state.currentSection}"]`).classList.add('active');
-                updateProgress();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
-        function previousSection() {
-            if (state.currentSection > 1) {
-                document.querySelector(`.form-section[data-section="${state.currentSection}"]`).classList.remove('active');
-                state.currentSection--;
-                document.querySelector(`.form-section[data-section="${state.currentSection}"]`).classList.add('active');
-                updateProgress();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+        async function initializeDHIS2() {
+            try {
+                DHIS2.baseUrl = window.location.origin + '/api';
+                
+                const user = await fetchDHIS2('/me').catch(() => ({ name: 'Local User' }));
+                DHIS2.currentUser = user;
+
+                await loadOrganizationUnits();
+
+                document.getElementById('dhisStatusDot').className = 'status-dot online';
+                document.getElementById('dhisStatusText').textContent = 'DHIS2 Connected';
+
+                showNotification('System ready', 'success');
+
+            } catch (error) {
+                console.error('DHIS2 initialization error:', error);
+                document.getElementById('dhisStatusDot').className = 'status-dot offline';
+                document.getElementById('dhisStatusText').textContent = 'Using Local Storage';
             }
         }
 
-        function updateProgress() {
-            const progress = (state.currentSection / state.totalSections) * 100;
-            document.getElementById('progressFill').style.width = progress + '%';
-            document.getElementById('progressText').textContent = `Section ${state.currentSection} of ${state.totalSections}`;
-        }
-
-        async function handleSubmit(e) {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const patientId = generatePatientId();
-            const specialty = formData.get('specialty');
-            const assignedDoctor = DOCTORS[specialty];
-            
-            const data = {
-                action: 'registerPatient',
-                patientId: patientId,
-                timestamp: new Date().toISOString(),
-                specialty: specialty,
-                assignedDoctor: assignedDoctor.name,
-                assignedDoctorUsername: assignedDoctor.username,
-                consultationStatus: 'pending',
-                ...Object.fromEntries(formData)
+        async function fetchDHIS2(endpoint, options = {}) {
+            const url = DHIS2.baseUrl + endpoint;
+            const defaultOptions = {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
             };
 
-            if (state.isOnline) {
-                await submitToServer(data, 'Patient registered successfully!');
-            } else {
-                saveOffline(data, 'Patient registered offline!');
-            }
-
-            // Ask if user wants to print
-            const wantsToPrint = confirm('Patient registered successfully!\n\nAssigned to: ' + assignedDoctor.name + '\n\nDo you want to print the patient record?');
-            if (wantsToPrint) {
-                generatePrintableRecord(data);
-            }
-
-            e.target.reset();
-            resetForm();
-        }
-
-        async function submitToServer(data, successMessage) {
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-
-            try {
-                await fetch(CONFIG.SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                showNotification(successMessage, 'success');
-                
-            } catch (error) {
-                console.error('Submit error:', error);
-                showNotification('Failed to submit - Saved offline', 'error');
-                saveOffline(data);
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Register Patient';
-            }
-        }
-
-        function saveOffline(data, message = 'Data saved offline - Will sync when online') {
-            state.pendingSubmissions.push(data);
-            savePendingSubmissions();
-            updatePendingCount();
-            showNotification(message, 'info');
-        }
-
-        async function syncPendingSubmissions() {
-            if (state.pendingSubmissions.length === 0) return;
-
-            showNotification(`Syncing ${state.pendingSubmissions.length} pending submission(s)...`, 'info');
-            const successfulSyncs = [];
+            const response = await fetch(url, { ...defaultOptions, ...options });
             
-            for (let i = 0; i < state.pendingSubmissions.length; i++) {
-                try {
-                    await fetch(CONFIG.SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(state.pendingSubmissions[i])
-                    });
-                    successfulSyncs.push(i);
-                } catch (error) {
-                    console.error('Sync error:', error);
+            if (!response.ok) {
+                throw new Error(`DHIS2 API error: ${response.statusText}`);
+            }
+
+            return await response.json();
+        }
+
+        async function loadOrganizationUnits() {
+            try {
+                const response = await fetchDHIS2('/organisationUnits.json?fields=id,name,level,parent[id,name]&paging=false');
+                DHIS2.orgUnits = response.organisationUnits;
+
+                const orgUnitTree = buildOrgUnitTree(DHIS2.orgUnits);
+                renderOrgUnitTree(orgUnitTree);
+
+                state.filteredOrgUnits = DHIS2.orgUnits;
+
+            } catch (error) {
+                console.error('Error loading org units:', error);
+                // Use mock data
+                DHIS2.orgUnits = [
+                    { id: 'OU1', name: 'Bo Government Hospital', level: 1 },
+                    { id: 'OU2', name: 'Makeni Government Hospital', level: 1 },
+                    { id: 'OU3', name: 'Kenema Government Hospital', level: 1 }
+                ];
+                renderOrgUnitTree(DHIS2.orgUnits);
+            }
+        }
+
+        function buildOrgUnitTree(orgUnits) {
+            const tree = [];
+            const map = new Map();
+
+            orgUnits.forEach(ou => {
+                map.set(ou.id, { ...ou, children: [] });
+            });
+
+            orgUnits.forEach(ou => {
+                const node = map.get(ou.id);
+                if (ou.parent) {
+                    const parent = map.get(ou.parent.id);
+                    if (parent) {
+                        parent.children.push(node);
+                    } else {
+                        tree.push(node);
+                    }
+                } else {
+                    tree.push(node);
+                }
+            });
+
+            return tree;
+        }
+
+        function renderOrgUnitTree(tree, container = document.getElementById('orgUnitTree'), level = 1) {
+            if (level === 1) {
+                container.innerHTML = '';
+            }
+
+            tree.forEach(node => {
+                const div = document.createElement('div');
+                div.className = `org-item org-level-${level}`;
+                div.textContent = node.name;
+                div.dataset.id = node.id;
+                div.dataset.name = node.name;
+
+                div.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    selectOrgUnit(node.id, node.name);
+                });
+
+                container.appendChild(div);
+
+                if (node.children && node.children.length > 0) {
+                    renderOrgUnitTree(node.children, container, level + 1);
+                }
+            });
+        }
+
+        function selectOrgUnit(id, name) {
+            state.selectedOrgUnit = { id, name };
+            document.getElementById('selectedOrgUnit').value = id;
+
+            document.querySelectorAll('.org-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            document.querySelector(`[data-id="${id}"]`)?.classList.add('selected');
+
+            showNotification(`Selected: ${name}`, 'info');
+        }
+
+        function searchOrgUnits(searchTerm) {
+            const filtered = DHIS2.orgUnits.filter(ou => 
+                ou.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            state.filteredOrgUnits = filtered;
+
+            const container = document.getElementById('orgUnitTree');
+            container.innerHTML = '';
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #8b949e;">No facilities found</div>';
+                return;
+            }
+
+            filtered.forEach(ou => {
+                const div = document.createElement('div');
+                div.className = 'org-item';
+                div.textContent = ou.name;
+                div.dataset.id = ou.id;
+                div.dataset.name = ou.name;
+
+                div.addEventListener('click', function() {
+                    selectOrgUnit(ou.id, ou.name);
+                });
+
+                container.appendChild(div);
+            });
+        }
+
+        function generatePatientId(firstName, dob, phone) {
+            const namePart = firstName.toLowerCase().replace(/[^a-z]/g, '');
+            const dobParts = dob.split('-'); // YYYY-MM-DD
+            const dobPart = dobParts[2] + dobParts[1] + dobParts[0]; // DDMMYYYY
+            const phonePart = phone.replace(/[^0-9]/g, '');
+            return `${namePart}_${dobPart}_${phonePart}`;
+        }
+
+        async function checkDuplicate() {
+            const firstName = document.getElementById('firstName').value.trim().toLowerCase();
+            const lastName = document.getElementById('lastName').value.trim().toLowerCase();
+            const dob = document.getElementById('dob').value;
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!firstName || !lastName || !dob || !phone) {
+                return;
+            }
+
+            const duplicate = Array.from(state.patients.values()).find(patient => 
+                patient.firstName?.toLowerCase() === firstName &&
+                patient.lastName?.toLowerCase() === lastName &&
+                patient.dob === dob &&
+                patient.phone === phone
+            );
+
+            const warningDiv = document.getElementById('duplicateWarning');
+
+            if (duplicate) {
+                warningDiv.innerHTML = `
+                    <div class="duplicate-warning">
+                        <h3>⚠️ Duplicate Patient Found</h3>
+                        <p style="color: #8b949e; margin: 10px 0;">A patient with this information already exists:</p>
+                        <div style="background: #21262d; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                            <div style="color: #e6edf3; font-weight: 600; margin-bottom: 5px;">${duplicate.firstName} ${duplicate.lastName}</div>
+                            <div style="color: #58a6ff; font-family: monospace;">${duplicate.patientId}</div>
+                        </div>
+                        <p style="color: #f85149; font-weight: 600;">Please use the existing Patient ID above or verify the information is correct.</p>
+                    </div>
+                `;
+            } else {
+                warningDiv.innerHTML = '';
+            }
+        }
+
+        async function loadPatientById() {
+            const patientId = document.getElementById('patientIdLookup').value.trim();
+
+            if (!patientId) {
+                showNotification('Please enter a Patient ID', 'error');
+                return;
+            }
+
+            const patient = state.patients.get(patientId);
+
+            if (!patient) {
+                showNotification('Patient not found', 'error');
+                return;
+            }
+
+            // Populate form fields
+            document.getElementById('firstName').value = patient.firstName || '';
+            document.getElementById('middleName').value = patient.middleName || '';
+            document.getElementById('lastName').value = patient.lastName || '';
+            document.getElementById('dob').value = patient.dob || '';
+            document.getElementById('gender').value = patient.gender || '';
+            document.getElementById('phone').value = patient.phone || '';
+            document.getElementById('email').value = patient.email || '';
+            document.getElementById('address').value = patient.address || '';
+            document.getElementById('emergencyContact').value = patient.emergencyContact || '';
+            document.getElementById('emergencyPhone').value = patient.emergencyPhone || '';
+            document.getElementById('existingPatientId').value = patientId;
+
+            // Disable demographic fields
+            ['firstName', 'middleName', 'lastName', 'dob', 'gender', 'phone', 'email', 'address'].forEach(id => {
+                document.getElementById(id).disabled = true;
+            });
+
+            if (patient.orgUnit && patient.orgUnitName) {
+                selectOrgUnit(patient.orgUnit, patient.orgUnitName);
+            }
+
+            showNotification('Patient information loaded - Add new consultation details', 'success');
+        }
+
+        function handleSpecialtyChange(e) {
+            const specialty = e.target.value;
+            const container = document.getElementById('doctorAssignment');
+
+            if (!specialty) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const availableDoctors = Object.entries(DOCTORS)
+                .filter(([_, doc]) => doc.specialty === specialty && doc.available)
+                .map(([username, doc]) => ({ username, ...doc }));
+
+            if (availableDoctors.length === 0) {
+                container.innerHTML = `
+                    <div style="background: rgba(248, 81, 73, 0.1); border: 1px solid #f85149; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                        <p style="color: #f85149; margin: 0;">No doctors available in ${specialty}. Patient will be added to waiting list.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="form-group">
+                    <label class="form-label">Available Doctors <span class="required">*</span></label>
+                    <select class="form-select" name="assignedDoctor" required>
+                        <option value="">Select doctor...</option>
+                        ${availableDoctors.map(doc => 
+                            `<option value="${doc.username}">${doc.name}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            `;
+        }
+
+        async function registerPatient(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            const firstName = formData.get('firstName');
+            const dob = formData.get('dob');
+            const phone = formData.get('phone');
+            const existingPatientId = formData.get('existingPatientId');
+
+            const patientId = existingPatientId || generatePatientId(firstName, dob, phone);
+
+            // Check for duplicates (only for new registrations)
+            if (!existingPatientId) {
+                const lastName = formData.get('lastName');
+                const duplicate = Array.from(state.patients.values()).find(patient => 
+                    patient.firstName?.toLowerCase() === firstName.toLowerCase() &&
+                    patient.lastName?.toLowerCase() === lastName.toLowerCase() &&
+                    patient.dob === dob &&
+                    patient.phone === phone
+                );
+
+                if (duplicate) {
+                    showNotification('Duplicate patient! Patient ID: ' + duplicate.patientId, 'error');
+                    return;
                 }
             }
 
-            if (successfulSyncs.length > 0) {
-                state.pendingSubmissions = state.pendingSubmissions.filter((_, index) => 
-                    !successfulSyncs.includes(index)
-                );
-                savePendingSubmissions();
-                updatePendingCount();
-                showNotification(`Successfully synced ${successfulSyncs.length} submission(s)`, 'success');
+            const consultationId = generateConsultationId();
+            const assignedDoctor = formData.get('assignedDoctor');
+
+            const consultationData = {
+                consultationId: consultationId,
+                patientId: patientId,
+                timestamp: new Date().toISOString(),
+                orgUnit: formData.get('orgUnit'),
+                orgUnitName: state.selectedOrgUnit?.name,
+                specialty: formData.get('specialty'),
+                assignedDoctor: assignedDoctor ? DOCTORS[assignedDoctor].name : null,
+                assignedDoctorUsername: assignedDoctor,
+                consultationStatus: assignedDoctor ? 'pending' : 'waiting',
+                temperature: formData.get('temperature'),
+                bloodPressure: formData.get('bloodPressure'),
+                pulse: formData.get('pulse'),
+                weight: formData.get('weight'),
+                height: formData.get('height'),
+                respiratoryRate: formData.get('respiratoryRate'),
+                chiefComplaint: formData.get('chiefComplaint'),
+                diagnosis: formData.get('diagnosis'),
+                treatment: formData.get('treatment'),
+                notes: formData.get('notes')
+            };
+
+            // Store consultation
+            state.consultations.set(consultationId, consultationData);
+
+            // Store or update patient
+            if (!state.patients.has(patientId)) {
+                const patientData = {
+                    patientId: patientId,
+                    firstName: firstName,
+                    middleName: formData.get('middleName'),
+                    lastName: formData.get('lastName'),
+                    dob: dob,
+                    gender: formData.get('gender'),
+                    phone: phone,
+                    email: formData.get('email'),
+                    address: formData.get('address'),
+                    emergencyContact: formData.get('emergencyContact'),
+                    emergencyPhone: formData.get('emergencyPhone'),
+                    orgUnit: formData.get('orgUnit'),
+                    orgUnitName: state.selectedOrgUnit?.name,
+                    registrationDate: new Date().toISOString()
+                };
+                state.patients.set(patientId, patientData);
             }
+
+            saveToLocalStorage();
+
+            showNotification(existingPatientId ? 'New consultation registered!' : 'Patient registered successfully!', 'success');
+
+            if (!existingPatientId) {
+                await generatePatientCard(state.patients.get(patientId));
+            }
+
+            showPatientStatus(consultationData);
+
+            // Reset form
+            e.target.reset();
+            state.selectedOrgUnit = null;
+            document.getElementById('duplicateWarning').innerHTML = '';
+            document.getElementById('doctorAssignment').innerHTML = '';
+            document.getElementById('existingPatientId').value = '';
+            
+            // Re-enable fields
+            ['firstName', 'middleName', 'lastName', 'dob', 'gender', 'phone', 'email', 'address'].forEach(id => {
+                document.getElementById(id).disabled = false;
+            });
         }
 
-        async function handleSearch() {
-            const firstName = document.getElementById('searchFirstName').value.trim();
-            const lastName = document.getElementById('searchLastName').value.trim();
-            const dob = document.getElementById('searchDOB').value;
-            const phone = document.getElementById('searchPhone').value.trim();
+        function generateConsultationId() {
+            const timestamp = new Date().getTime();
+            const random = Math.floor(Math.random() * 1000);
+            return `CONS-${timestamp}-${random}`;
+        }
+
+        async function searchPatient() {
             const patientId = document.getElementById('searchPatientID').value.trim();
 
-            // Check if any search field has value
-            if (!firstName && !lastName && !dob && !phone && !patientId) {
-                document.getElementById('searchResults').classList.remove('show');
+            if (!patientId) {
+                document.getElementById('searchResults').innerHTML = '';
                 return;
             }
 
-            if (!state.isOnline) {
-                showNotification('Search requires internet connection', 'error');
-                return;
-            }
-
-            const resultsContainer = document.getElementById('resultsContainer');
+            const resultsContainer = document.getElementById('searchResults');
             resultsContainer.innerHTML = '<div class="loading"><div class="spinner"></div><p>Searching...</p></div>';
-            document.getElementById('searchResults').classList.add('show');
 
-            try {
-                const params = new URLSearchParams({
-                    action: 'searchPatient',
-                    firstName, lastName, dob, phone, patientId
-                });
-
-                const response = await fetch(`${CONFIG.SCRIPT_URL}?${params}`);
-                const results = await response.json();
-                displaySearchResults(results);
-            } catch (error) {
-                // Mock data for demo
-                setTimeout(() => {
-                    const mockResults = [
-                        {
-                            patientId: 'PT-2025-0001',
-                            firstName: 'John',
-                            lastName: 'Doe',
-                            dob: '1990-05-15',
-                            phone: '076123456',
-                            lastVisit: '2025-10-05'
-                        }
-                    ];
-                    displaySearchResults(mockResults);
-                }, 1000);
-            }
-        }
-
-        function displaySearchResults(results) {
-            const container = document.getElementById('resultsContainer');
-            
-            if (results.length === 0) {
-                container.innerHTML = '<div class="no-records">No patients found</div>';
-                return;
-            }
-
-            container.innerHTML = results.map(patient => `
-                <div class="patient-card" onclick="viewPatientRecord('${patient.patientId}')">
-                    <div class="patient-name">${patient.firstName} ${patient.lastName}</div>
-                    <div class="patient-details">Patient ID: ${patient.patientId}</div>
-                    <div class="patient-details">Date of Birth: ${patient.dob}</div>
-                    <div class="patient-details">Phone: ${patient.phone}</div>
-                    <div class="patient-details">Last Visit: ${patient.lastVisit || 'No visits'}</div>
-                    <button class="btn-view">View & Print Record</button>
-                </div>
-            `).join('');
-        }
-
-        async function viewPatientRecord(patientId) {
-            if (!state.isOnline) {
-                showNotification('Viewing records requires internet connection', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch(`${CONFIG.SCRIPT_URL}?action=getPatient&patientId=${patientId}`);
-                const patient = await response.json();
-                generatePrintableRecord(patient);
-            } catch (error) {
-                const mockPatient = {
-                    patientId: 'PT-2025-0001',
-                    firstName: 'John',
-                    middleName: 'Michael',
-                    lastName: 'Doe',
-                    dob: '1990-05-15',
-                    gender: 'Male',
-                    phone: '076123456',
-                    email: 'john.doe@email.com',
-                    address: '123 Main Street, Bo',
-                    region: 'Southern Region',
-                    district: 'Bo District',
-                    chiefdom: 'Bo City',
-                    healthFacility: 'Bo Government Hospital',
-                    visits: [
-                        {
-                            date: '2025-10-05',
-                            chiefComplaint: 'Fever and headache',
-                            diagnosis: 'Malaria',
-                            treatment: 'ACT therapy',
-                            temperature: '38.5',
-                            bloodPressure: '120/80'
-                        }
-                    ]
-                };
-                generatePrintableRecord(mockPatient);
-            }
-        }
-
-        function generatePrintableRecord(patient) {
-            const printSection = document.getElementById('printSection');
-            
-            const age = patient.dob ? calculateAge(patient.dob) : 'N/A';
-            const visitDate = patient.timestamp ? new Date(patient.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-            
-            printSection.innerHTML = `
-                <div style="padding: 0; margin: 0; background: white; color: #333; font-family: Arial, sans-serif;">
-                    <!-- Header with Blue Background -->
-                    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 40px; text-align: center; border-bottom: 5px solid #60a5fa;">
-                        <h1 style="margin: 0; font-size: 36px; font-weight: bold; letter-spacing: 1px;">PATIENT MEDICAL RECORD</h1>
-                        <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Electronic Medical Record System</p>
-                    </div>
-
-                    <!-- Patient Information Section -->
-                    <div style="padding: 40px 60px;">
-                        <div style="background: #eff6ff; border-left: 5px solid #3b82f6; padding: 25px; margin-bottom: 30px; border-radius: 5px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1e3a8a; font-size: 24px; font-weight: bold;">Patient Information</h2>
-                            
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="padding: 12px 20px; width: 50%; border-bottom: 1px solid #bfdbfe;">
-                                        <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Full Name</div>
-                                        <div style="color: #1e293b; font-size: 18px; font-weight: 600;">${patient.firstName} ${patient.middleName || ''} ${patient.lastName}</div>
-                                    </td>
-                                    <td style="padding: 12px 20px; width: 50%; border-bottom: 1px solid #bfdbfe;">
-                                        <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Date of Birth</div>
-                                        <div style="color: #1e293b; font-size: 18px; font-weight: 600;">${patient.dob || 'N/A'}</div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 12px 20px; border-bottom: 1px solid #bfdbfe;">
-                                        <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Gender</div>
-                                        <div style="color: #1e293b; font-size: 18px; font-weight: 600;">${patient.gender || 'N/A'}</div>
-                                    </td>
-                                    <td style="padding: 12px 20px; border-bottom: 1px solid #bfdbfe;">
-                                        <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Age</div>
-                                        <div style="color: #1e293b; font-size: 18px; font-weight: 600;">${age} years</div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 12px 20px; border-bottom: 1px solid #bfdbfe;">
-                                        <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Phone Number</div>
-                                        <div style="color: #1e293b; font-size: 18px; font-weight: 600;">${patient.phone || 'N/A'}</div>
-                                    </td>
-                                    <td style="padding: 12px 20px; border-bottom: 1px solid #bfdbfe;">
-                                        <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Email</div>
-                                        <div style="color: #1e293b; font-size: 18px; font-weight: 600;">${patient.email || 'N/A'}</div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td colspan="2" style="padding: 12px 20px; border-bottom: 1px solid #bfdbfe;">
-                                        <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Address</div>
-                                        <div style="color: #1e293b; font-size: 18px; font-weight: 600;">${patient.address || 'N/A'}</div>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-
-                        <!-- Location Information -->
-                        <div style="background: white; border: 2px solid #bfdbfe; border-left: 5px solid #60a5fa; padding: 25px; margin-bottom: 30px; border-radius: 5px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1e3a8a; font-size: 20px; font-weight: bold;">Location & Facility Information</h2>
-                            
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="padding: 10px 20px; width: 50%;">
-                                        <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Region</div>
-                                        <div style="color: #1e293b; font-size: 16px; font-weight: 600;">${patient.region || 'N/A'}</div>
-                                    </td>
-                                    <td style="padding: 10px 20px; width: 50%;">
-                                        <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">District</div>
-                                        <div style="color: #1e293b; font-size: 16px; font-weight: 600;">${patient.district || 'N/A'}</div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 10px 20px;">
-                                        <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Chiefdom</div>
-                                        <div style="color: #1e293b; font-size: 16px; font-weight: 600;">${patient.chiefdom || 'N/A'}</div>
-                                    </td>
-                                    <td style="padding: 10px 20px;">
-                                        <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Health Facility</div>
-                                        <div style="color: #1e293b; font-size: 16px; font-weight: 600;">${patient.healthFacility || 'N/A'}</div>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-
-                        <!-- Emergency Contact -->
-                        ${patient.emergencyContact || patient.emergencyPhone ? `
-                        <div style="background: #fef3c7; border-left: 5px solid #f59e0b; padding: 20px; margin-bottom: 30px; border-radius: 5px;">
-                            <h2 style="margin: 0 0 15px 0; color: #92400e; font-size: 18px; font-weight: bold;">Emergency Contact</h2>
-                            <div style="display: flex; gap: 40px;">
-                                ${patient.emergencyContact ? `
-                                <div>
-                                    <div style="color: #78350f; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Contact Name</div>
-                                    <div style="color: #1e293b; font-size: 16px; font-weight: 600;">${patient.emergencyContact}</div>
-                                </div>
-                                ` : ''}
-                                ${patient.emergencyPhone ? `
-                                <div>
-                                    <div style="color: #78350f; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Contact Phone</div>
-                                    <div style="color: #1e293b; font-size: 16px; font-weight: 600;">${patient.emergencyPhone}</div>
-                                </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                        ` : ''}
-
-                        <!-- Clinical Information -->
-                        ${patient.temperature || patient.bloodPressure || patient.pulse || patient.weight || patient.height ? `
-                        <div style="background: #f0fdf4; border-left: 5px solid #22c55e; padding: 25px; margin-bottom: 30px; border-radius: 5px;">
-                            <h2 style="margin: 0 0 20px 0; color: #166534; font-size: 20px; font-weight: bold;">Vital Signs - ${visitDate}</h2>
-                            
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-                                ${patient.temperature ? `
-                                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Temperature</div>
-                                    <div style="color: #1e293b; font-size: 24px; font-weight: bold;">${patient.temperature}°C</div>
-                                </div>
-                                ` : ''}
-                                ${patient.bloodPressure ? `
-                                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Blood Pressure</div>
-                                    <div style="color: #1e293b; font-size: 24px; font-weight: bold;">${patient.bloodPressure}</div>
-                                </div>
-                                ` : ''}
-                                ${patient.pulse ? `
-                                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Pulse</div>
-                                    <div style="color: #1e293b; font-size: 24px; font-weight: bold;">${patient.pulse} bpm</div>
-                                </div>
-                                ` : ''}
-                                ${patient.weight ? `
-                                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Weight</div>
-                                    <div style="color: #1e293b; font-size: 24px; font-weight: bold;">${patient.weight} kg</div>
-                                </div>
-                                ` : ''}
-                                ${patient.height ? `
-                                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Height</div>
-                                    <div style="color: #1e293b; font-size: 24px; font-weight: bold;">${patient.height} cm</div>
-                                </div>
-                                ` : ''}
-                                ${patient.respiratoryRate ? `
-                                <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    <div style="color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Respiratory Rate</div>
-                                    <div style="color: #1e293b; font-size: 24px; font-weight: bold;">${patient.respiratoryRate}</div>
-                                </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                        ` : ''}
-
-                        <!-- Diagnosis & Treatment -->
-                        ${patient.chiefComplaint || patient.diagnosis || patient.treatment ? `
-                        <div style="background: white; border: 2px solid #bfdbfe; padding: 25px; border-radius: 5px; margin-bottom: 30px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1e3a8a; font-size: 20px; font-weight: bold;">Clinical Assessment</h2>
-                            
-                            ${patient.chiefComplaint ? `
-                            <div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 5px;">
-                                <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Chief Complaint</div>
-                                <div style="color: #1e293b; font-size: 16px; line-height: 1.6;">${patient.chiefComplaint}</div>
-                            </div>
-                            ` : ''}
-                            
-                            ${patient.diagnosis ? `
-                            <div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 5px;">
-                                <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Diagnosis</div>
-                                <div style="color: #1e293b; font-size: 16px; line-height: 1.6;">${patient.diagnosis}</div>
-                            </div>
-                            ` : ''}
-                            
-                            ${patient.treatment ? `
-                            <div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 5px;">
-                                <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Treatment / Prescription</div>
-                                <div style="color: #1e293b; font-size: 16px; line-height: 1.6;">${patient.treatment}</div>
-                            </div>
-                            ` : ''}
-                            
-                            ${patient.notes ? `
-                            <div style="padding: 15px; background: #f8fafc; border-radius: 5px;">
-                                <div style="color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 8px;">Clinical Notes</div>
-                                <div style="color: #1e293b; font-size: 16px; line-height: 1.6;">${patient.notes}</div>
-                            </div>
-                            ` : ''}
-                        </div>
-                        ` : ''}
-                    </div>
-
-                    <!-- Footer -->
-                    <div style="background: #f1f5f9; padding: 30px 60px; border-top: 3px solid #3b82f6; text-align: center; margin-top: 40px;">
-                        <div style="color: #64748b; font-size: 13px; margin-bottom: 8px;">
-                            <strong>Printed on:</strong> ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at ${new Date().toLocaleTimeString()}
-                        </div>
-                        <div style="color: #94a3b8; font-size: 12px; font-style: italic;">
-                            This is a confidential medical record. Handle with care and in accordance with patient privacy regulations.
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // Small delay to ensure rendering, then print
             setTimeout(() => {
-                window.print();
-            }, 100);
+                const patient = state.patients.get(patientId);
+
+                if (!patient) {
+                    resultsContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #8b949e;">Patient not found</div>';
+                    return;
+                }
+
+                // Get consultations for this patient
+                const consultations = Array.from(state.consultations.values())
+                    .filter(c => c.patientId === patientId)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                resultsContainer.innerHTML = `
+                    <div class="patient-card">
+                        <div class="patient-name">${patient.firstName} ${patient.lastName}</div>
+                        <div class="patient-id-badge">${patient.patientId}</div>
+                        <div class="patient-details">DOB: ${patient.dob}</div>
+                        <div class="patient-details">Phone: ${patient.phone}</div>
+                        <div class="patient-details">Gender: ${patient.gender}</div>
+                        <div class="patient-details">Facility: ${patient.orgUnitName || 'N/A'}</div>
+                        
+                        <h4 style="color: #58a6ff; margin-top: 20px; margin-bottom: 10px;">Consultations (${consultations.length})</h4>
+                        ${consultations.map(c => `
+                            <div style="background: #21262d; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
+                                <div style="color: #8b949e; font-size: 12px;">${new Date(c.timestamp).toLocaleString()}</div>
+                                <div style="margin-top: 8px;">
+                                    <span class="status-badge ${c.consultationStatus === 'ready' ? 'status-ready' : c.consultationStatus === 'pending' ? 'status-pending' : 'status-waiting'}">
+                                        ${c.consultationStatus.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div style="color: #e6edf3; margin-top: 8px;">Specialty: ${c.specialty}</div>
+                                ${c.assignedDoctor ? `<div style="color: #8b949e;">Doctor: ${c.assignedDoctor}</div>` : ''}
+                                ${c.chiefComplaint ? `<div style="color: #8b949e;">Complaint: ${c.chiefComplaint}</div>` : ''}
+                            </div>
+                        `).join('')}
+
+                        <button class="btn btn-primary" onclick='viewPatient(${JSON.stringify(patient).replace(/'/g, "\\'")})'style="margin-top: 15px; width: auto;">
+                            View Full Record
+                        </button>
+                    </div>
+                `;
+            }, 500);
         }
 
-        function calculateAge(dob) {
-            const birthDate = new Date(dob);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            
-            return age;
+        function viewPatient(patient) {
+            showPatientStatus(patient);
         }
 
-        function resetForm() {
-            state.currentSection = 1;
-            document.querySelectorAll('.form-section').forEach(section => section.classList.remove('active'));
-            document.querySelector('.form-section[data-section="1"]').classList.add('active');
-            updateProgress();
+        function showPatientStatus(data) {
+            const modal = document.getElementById('statusModal');
+            const content = document.getElementById('statusModalContent');
 
-            document.getElementById('districtSelect').disabled = true;
-            document.getElementById('chiefdomSelect').disabled = true;
-            document.getElementById('healthFacilitySelect').disabled = true;
-            document.getElementById('assignedDoctorDisplay').style.display = 'none';
-        }
+            const isConsultation = data.consultationId !== undefined;
 
-        // Doctor Dashboard Functions
-        async function loadDoctorCases() {
-            const container = document.getElementById('doctorCasesContainer');
-            
-            if (!state.isOnline) {
-                container.innerHTML = '<div class="no-records">Internet connection required to load cases</div>';
-                return;
-            }
+            content.innerHTML = `
+                <h2 style="color: #58a6ff; margin-bottom: 20px;">${isConsultation ? 'Consultation Status' : 'Patient Record'}</h2>
 
-            try {
-                const response = await fetch(`${CONFIG.SCRIPT_URL}?action=getDoctorCases&doctor=${state.currentUser}`);
-                const cases = await response.json();
-                displayDoctorCases(cases);
-            } catch (error) {
-                // Mock data for demo
-                const mockCases = [
-                    {
-                        patientId: 'PT-2025-0001',
-                        firstName: 'John',
-                        lastName: 'Doe',
-                        phone: '076123456',
-                        chiefComplaint: 'Fever and headache',
-                        diagnosis: 'Suspected Malaria',
-                        timestamp: new Date().toISOString(),
-                        consultationStatus: 'pending'
-                    },
-                    {
-                        patientId: 'PT-2025-0002',
-                        firstName: 'Jane',
-                        lastName: 'Smith',
-                        phone: '077654321',
-                        chiefComplaint: 'Abdominal pain',
-                        diagnosis: 'Gastritis',
-                        timestamp: new Date(Date.now() - 86400000).toISOString(),
-                        consultationStatus: 'pending'
-                    }
-                ];
-                displayDoctorCases(mockCases);
-            }
-        }
-
-        function displayDoctorCases(cases) {
-            const container = document.getElementById('doctorCasesContainer');
-            const doctorName = CONFIG.DOCTOR_CREDENTIALS[state.currentUser].name;
-            
-            if (cases.length === 0) {
-                container.innerHTML = '<div class="no-records">No pending consultation requests</div>';
-                return;
-            }
-
-            const pendingCases = cases.filter(c => c.consultationStatus === 'pending');
-            const acceptedCases = cases.filter(c => c.consultationStatus === 'accepted');
-
-            let html = `
-                <div style="margin-bottom: 30px;">
-                    <h3 style="color: #58a6ff; font-size: 20px; margin-bottom: 15px;">Welcome, ${doctorName}</h3>
-                    <p style="color: #8b949e;">You have ${pendingCases.length} pending consultation request(s)</p>
+                ${isConsultation && data.consultationStatus ? `
+                <div style="text-align: center; margin: 30px 0;">
+                    <div style="display: inline-block; padding: 20px 40px; background: ${
+                        data.consultationStatus === 'ready' ? '#2ea043' :
+                        data.consultationStatus === 'pending' ? '#f59e0b' : '#8b949e'
+                    }; border-radius: 12px;">
+                        <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Status</div>
+                        <div style="font-size: 24px; font-weight: bold; color: white;">
+                            ${data.consultationStatus === 'ready' ? 'READY FOR CONSULTATION' :
+                              data.consultationStatus === 'pending' ? 'PENDING DOCTOR ACCEPTANCE' : 'WAITING FOR DOCTOR'}
+                        </div>
+                    </div>
                 </div>
+                ` : ''}
+
+                <div style="background: #21262d; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #8b949e; font-size: 12px; margin-bottom: 5px;">Patient ID</div>
+                        <div style="color: #58a6ff; font-size: 16px; font-family: monospace;">${data.patientId}</div>
+                    </div>
+                    ${isConsultation && data.assignedDoctor ? `
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #8b949e; font-size: 12px; margin-bottom: 5px;">Assigned Doctor</div>
+                        <div style="color: #e6edf3;">${data.assignedDoctor}</div>
+                    </div>
+                    ` : ''}
+                    ${data.orgUnitName ? `
+                    <div>
+                        <div style="color: #8b949e; font-size: 12px; margin-bottom: 5px;">Health Facility</div>
+                        <div style="color: #e6edf3;">${data.orgUnitName}</div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <button class="btn btn-primary" onclick="closeModal()">Close</button>
             `;
 
-            if (pendingCases.length > 0) {
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('statusModal').classList.remove('show');
+        }
+
+        async function generatePatientCard(patientData) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const qrCanvas = document.createElement('canvas');
+            await QRCode.toCanvas(qrCanvas, patientData.patientId, {
+                width: 150,
+                margin: 2
+            });
+            const qrDataUrl = qrCanvas.toDataURL();
+
+            doc.setFillColor(30, 58, 138);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.text('PATIENT IDENTIFICATION CARD', 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text('Electronic Medical Record System', 105, 30, { align: 'center' });
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text(`${patientData.firstName} ${patientData.lastName}`, 20, 60);
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+
+            let yPos = 75;
+            const fields = [
+                ['Patient ID:', patientData.patientId],
+                ['DOB:', patientData.dob],
+                ['Gender:', patientData.gender],
+                ['Phone:', patientData.phone],
+                ['Facility:', patientData.orgUnitName || 'N/A']
+            ];
+
+            fields.forEach(([label, value]) => {
+                doc.setFont(undefined, 'bold');
+                doc.text(label, 20, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.text(value || 'N/A', 60, yPos);
+                yPos += 8;
+            });
+
+            doc.addImage(qrDataUrl, 'PNG', 140, 50, 50, 50);
+            doc.setFontSize(8);
+            doc.text('Scan for details', 165, 108, { align: 'center' });
+
+            doc.save(`Patient_Card_${patientData.patientId}.pdf`);
+            showNotification('Patient card downloaded', 'success');
+        }
+
+        function loadDoctorDashboard() {
+            const container = document.getElementById('doctorDashboard');
+            
+            const myConsultations = Array.from(state.consultations.values())
+                .filter(c => c.assignedDoctorUsername === state.currentUserName)
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            const pending = myConsultations.filter(c => c.consultationStatus === 'pending');
+            const ready = myConsultations.filter(c => c.consultationStatus === 'ready');
+
+            if (myConsultations.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #8b949e;">No patients assigned</div>';
+                return;
+            }
+
+            let html = `<div style="margin-bottom: 20px;">
+                <p style="color: #8b949e;">You have ${pending.length} pending consultation request(s)</p>
+            </div>`;
+
+            if (pending.length > 0) {
                 html += '<h3 style="color: #f59e0b; margin-bottom: 15px;">Pending Requests</h3>';
-                pendingCases.forEach(patient => {
+                pending.forEach(consultation => {
+                    const patient = state.patients.get(consultation.patientId);
                     html += `
                         <div class="patient-card" style="border-left: 4px solid #f59e0b;">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                                <div>
-                                    <div class="patient-name">${patient.firstName} ${patient.lastName}</div>
-                                    <div class="patient-details">Phone: ${patient.phone}</div>
-                                    <div class="patient-details">Submitted: ${new Date(patient.timestamp).toLocaleString()}</div>
-                                </div>
-                                <span style="background: #f59e0b; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">PENDING</span>
-                            </div>
-                            <div style="background: #21262d; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                                <div style="margin-bottom: 10px;">
-                                    <div style="color: #8b949e; font-size: 12px; margin-bottom: 5px;">Chief Complaint</div>
-                                    <div style="color: #e6edf3;">${patient.chiefComplaint || 'Not provided'}</div>
-                                </div>
-                                <div>
-                                    <div style="color: #8b949e; font-size: 12px; margin-bottom: 5px;">Diagnosis</div>
-                                    <div style="color: #e6edf3;">${patient.diagnosis || 'Not provided'}</div>
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 10px;">
-                                <button class="btn-view" onclick="acceptConsultation('${patient.phone}')" style="flex: 1; background: #2ea043;">
-                                    Accept Consultation
-                                </button>
-                                <button class="btn-view" onclick="viewPatientDetails('${patient.phone}')" style="flex: 1;">
-                                    View Full Details
-                                </button>
-                            </div>
+                            <div class="patient-name">${patient?.firstName} ${patient?.lastName}</div>
+                            <div class="patient-id-badge">${consultation.patientId}</div>
+                            <div class="patient-details">Phone: ${patient?.phone}</div>
+                            <div class="patient-details">Specialty: ${consultation.specialty}</div>
+                            ${consultation.chiefComplaint ? `<div class="patient-details">Complaint: ${consultation.chiefComplaint}</div>` : ''}
+                            <button class="btn btn-success" onclick="acceptConsultation('${consultation.consultationId}')" style="margin-top: 15px;">
+                                Accept Consultation
+                            </button>
                         </div>
                     `;
                 });
             }
 
-            if (acceptedCases.length > 0) {
+            if (ready.length > 0) {
                 html += '<h3 style="color: #2ea043; margin: 30px 0 15px;">Accepted Consultations</h3>';
-                acceptedCases.forEach(patient => {
+                ready.forEach(consultation => {
+                    const patient = state.patients.get(consultation.patientId);
                     html += `
                         <div class="patient-card" style="border-left: 4px solid #2ea043;">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div>
-                                    <div class="patient-name">${patient.firstName} ${patient.lastName}</div>
-                                    <div class="patient-details">Phone: ${patient.phone}</div>
-                                    <div style="color: #2ea043; font-weight: 600; margin-top: 8px;">Ready for consultation</div>
-                                </div>
-                                <span style="background: #2ea043; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">ACCEPTED</span>
-                            </div>
+                            <div class="patient-name">${patient?.firstName} ${patient?.lastName}</div>
+                            <div class="patient-id-badge">${consultation.patientId}</div>
+                            <div class="patient-details">Phone: ${patient?.phone}</div>
+                            <span class="status-badge status-ready">READY</span>
                         </div>
                     `;
                 });
@@ -2024,212 +1816,86 @@ Makeni City||Makeni Government Hospital`;
             container.innerHTML = html;
         }
 
-        async function acceptConsultation(phone) {
-            if (!confirm('Accept this consultation request?')) {
-                return;
-            }
+        function acceptConsultation(consultationId) {
+            if (!confirm('Accept this consultation request?')) return;
 
-            try {
-                await fetch(CONFIG.SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'acceptConsultation',
-                        phone: phone,
-                        doctor: state.currentUser
-                    })
-                });
-
-                showNotification('Consultation accepted! Patient will be notified.', 'success');
-                loadDoctorCases(); // Reload cases
-            } catch (error) {
-                showNotification('Error accepting consultation', 'error');
-            }
-        }
-
-        async function viewPatientDetails(phone) {
-            // This would fetch and display full patient details
-            showNotification('Loading patient details...', 'info');
-        }
-
-        // Patient Status Check
-        async function loadAllConsultationStatuses() {
-            const container = document.getElementById('statusContainer');
-            
-            if (!state.isOnline) {
-                container.innerHTML = '<div class="no-records">Internet connection required to load consultation statuses</div>';
-                return;
-            }
-
-            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading consultation statuses...</p></div>';
-
-            try {
-                const response = await fetch(`${CONFIG.SCRIPT_URL}?action=getAllConsultations`);
-                const consultations = await response.json();
-                displayAllConsultationStatuses(consultations);
-            } catch (error) {
-                // Mock data for demo - sorted from latest to oldest
-                const mockConsultations = [
-                    {
-                        firstName: 'Jane',
-                        lastName: 'Smith',
-                        phone: '077654321',
-                        address: '456 Market Street, Makeni',
-                        assignedDoctor: 'Dr. Sarah Johnson',
-                        specialty: 'Pediatrics',
-                        consultationStatus: 'accepted',
-                        timestamp: new Date().toISOString()
-                    },
-                    {
-                        firstName: 'John',
-                        lastName: 'Doe',
-                        phone: '076123456',
-                        address: '123 Main Street, Bo',
-                        assignedDoctor: 'Dr. John Smith',
-                        specialty: 'General Medicine',
-                        consultationStatus: 'pending',
-                        timestamp: new Date(Date.now() - 3600000).toISOString()
-                    },
-                    {
-                        firstName: 'Mary',
-                        lastName: 'Johnson',
-                        phone: '078987654',
-                        address: '789 River Road, Kenema',
-                        assignedDoctor: 'Dr. Emily Brown',
-                        specialty: 'Obstetrics & Gynecology',
-                        consultationStatus: 'accepted',
-                        timestamp: new Date(Date.now() - 7200000).toISOString()
-                    },
-                    {
-                        firstName: 'Robert',
-                        lastName: 'Williams',
-                        phone: '075246813',
-                        address: '321 Hospital Avenue, Freetown',
-                        assignedDoctor: 'Dr. Michael Williams',
-                        specialty: 'Surgery',
-                        consultationStatus: 'pending',
-                        timestamp: new Date(Date.now() - 86400000).toISOString()
-                    }
-                ];
-                displayAllConsultationStatuses(mockConsultations);
-            }
-        }
-
-        function displayAllConsultationStatuses(consultations) {
-            const container = document.getElementById('statusContainer');
-            
-            if (consultations.length === 0) {
-                container.innerHTML = '<div class="no-records">No consultation requests found</div>';
-                return;
-            }
-
-            // Sort by timestamp (latest first)
-            consultations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-            let html = `
-                <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="color: #58a6ff; font-size: 18px; margin: 0;">All Consultation Requests</h3>
-                    <span style="color: #8b949e; font-size: 14px;">Total: ${consultations.length} requests</span>
-                </div>
-
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; background: #161b22; border-radius: 8px; overflow: hidden;">
-                        <thead>
-                            <tr style="background: #21262d; border-bottom: 2px solid #30363d;">
-                                <th style="padding: 15px; text-align: left; color: #58a6ff; font-weight: 600; font-size: 14px; text-transform: uppercase;">Status</th>
-                                <th style="padding: 15px; text-align: left; color: #58a6ff; font-weight: 600; font-size: 14px; text-transform: uppercase;">Name</th>
-                                <th style="padding: 15px; text-align: left; color: #58a6ff; font-weight: 600; font-size: 14px; text-transform: uppercase;">Phone</th>
-                                <th style="padding: 15px; text-align: left; color: #58a6ff; font-weight: 600; font-size: 14px; text-transform: uppercase;">Address</th>
-                                <th style="padding: 15px; text-align: left; color: #58a6ff; font-weight: 600; font-size: 14px; text-transform: uppercase;">Doctor</th>
-                                <th style="padding: 15px; text-align: left; color: #58a6ff; font-weight: 600; font-size: 14px; text-transform: uppercase;">Specialty</th>
-                                <th style="padding: 15px; text-align: left; color: #58a6ff; font-weight: 600; font-size: 14px; text-transform: uppercase;">Date/Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            consultations.forEach((patient, index) => {
-                const statusColor = patient.consultationStatus === 'accepted' ? '#2ea043' : '#f59e0b';
-                const statusText = patient.consultationStatus === 'accepted' ? 'READY' : 'PENDING';
-                const statusIcon = patient.consultationStatus === 'accepted' ? '✓' : '⏱';
-                const date = new Date(patient.timestamp);
-                const dateStr = date.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric',
-                    year: 'numeric'
-                });
-                const timeStr = date.toLocaleTimeString('en-US', { 
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+            const consultation = state.consultations.get(consultationId);
+            if (consultation) {
+                consultation.consultationStatus = 'ready';
+                state.consultations.set(consultationId, consultation);
+                saveToLocalStorage();
                 
-                const rowBg = index % 2 === 0 ? '#161b22' : '#1c2128';
-
-                html += `
-                    <tr style="border-bottom: 1px solid #30363d; background: ${rowBg}; transition: background 0.2s;">
-                        <td style="padding: 15px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 18px;">${statusIcon}</span>
-                                <span style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap;">
-                                    ${statusText}
-                                </span>
-                            </div>
-                        </td>
-                        <td style="padding: 15px; color: #e6edf3; font-weight: 600;">
-                            ${patient.firstName} ${patient.lastName}
-                        </td>
-                        <td style="padding: 15px; color: #8b949e;">
-                            ${patient.phone}
-                        </td>
-                        <td style="padding: 15px; color: #8b949e; max-width: 200px;">
-                            ${patient.address}
-                        </td>
-                        <td style="padding: 15px; color: #58a6ff; font-weight: 600;">
-                            ${patient.assignedDoctor}
-                        </td>
-                        <td style="padding: 15px; color: #8b949e;">
-                            ${patient.specialty}
-                        </td>
-                        <td style="padding: 15px; color: #8b949e; white-space: nowrap;">
-                            <div>${dateStr}</div>
-                            <div style="font-size: 12px; color: #6e7681;">${timeStr}</div>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            container.innerHTML = html;
-
-            // Add hover effect to rows
-            const rows = container.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                row.addEventListener('mouseenter', function() {
-                    this.style.background = '#21262d';
-                });
-                row.addEventListener('mouseleave', function() {
-                    const index = Array.from(this.parentNode.children).indexOf(this);
-                    this.style.background = index % 2 === 0 ? '#161b22' : '#1c2128';
-                });
-            });
+                showNotification('Consultation accepted!', 'success');
+                loadDoctorDashboard();
+            }
         }
 
-        function generatePatientId() {
-            const year = new Date().getFullYear();
-            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-            return `PT-${year}-${random}`;
+        function loadConsultations() {
+            const container = document.getElementById('consultationsList');
+            const consultations = Array.from(state.consultations.values())
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            if (consultations.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #8b949e;">No patients registered</div>';
+                return;
+            }
+
+            container.innerHTML = consultations.map(consultation => {
+                const patient = state.patients.get(consultation.patientId);
+                return `
+                    <div class="patient-card">
+                        <div class="patient-name">${patient?.firstName} ${patient?.lastName}</div>
+                        <div class="patient-id-badge">${consultation.patientId}</div>
+                        <div class="patient-details">Facility: ${consultation.orgUnitName || 'N/A'}</div>
+                        <div class="patient-details">Date: ${new Date(consultation.timestamp).toLocaleString()}</div>
+                        <div class="patient-details">Specialty: ${consultation.specialty}</div>
+                        ${consultation.assignedDoctor ? `<div class="patient-details">Doctor: ${consultation.assignedDoctor}</div>` : ''}
+                        <div style="margin-top: 10px;">
+                            <span class="status-badge ${
+                                consultation.consultationStatus === 'ready' ? 'status-ready' :
+                                consultation.consultationStatus === 'pending' ? 'status-pending' : 'status-waiting'
+                            }">
+                                ${consultation.consultationStatus.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('emr_patients', JSON.stringify(Array.from(state.patients.entries())));
+            localStorage.setItem('emr_consultations', JSON.stringify(Array.from(state.consultations.entries())));
+        }
+
+        function loadFromLocalStorage() {
+            loadDoctorAvailability();
+
+            const savedPatients = localStorage.getItem('emr_patients');
+            if (savedPatients) {
+                try {
+                    const entries = JSON.parse(savedPatients);
+                    state.patients = new Map(entries);
+                } catch (error) {
+                    console.error('Error loading patients:', error);
+                }
+            }
+
+            const savedConsultations = localStorage.getItem('emr_consultations');
+            if (savedConsultations) {
+                try {
+                    const entries = JSON.parse(savedConsultations);
+                    state.consultations = new Map(entries);
+                } catch (error) {
+                    console.error('Error loading consultations:', error);
+                }
+            }
         }
 
         function showNotification(message, type) {
             const notification = document.getElementById('notification');
             const text = document.getElementById('notificationText');
-            
+
             notification.className = `notification ${type} show`;
             text.textContent = message;
 
@@ -2237,9 +1903,6 @@ Makeni City||Makeni Government Hospital`;
                 notification.classList.remove('show');
             }, 4000);
         }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
